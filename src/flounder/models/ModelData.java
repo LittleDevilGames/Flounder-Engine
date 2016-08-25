@@ -1,5 +1,6 @@
 package flounder.models;
 
+import flounder.materials.*;
 import flounder.maths.vectors.*;
 import flounder.resources.*;
 
@@ -11,6 +12,7 @@ public class ModelData {
 	public List<Vector2f> textures = new ArrayList<>();
 	public List<Vector3f> normals = new ArrayList<>();
 	public List<Integer> indices = new ArrayList<>();
+	public List<Material> materials = new ArrayList<>();
 	public boolean enableSmoothShading = true;
 
 	public ModelData(MyFile file) {
@@ -31,6 +33,7 @@ public class ModelData {
 		float[] texturesArray = new float[vertices.size() * 2];
 		float[] normalsArray = new float[vertices.size() * 3];
 		float[] tangentsArray = new float[vertices.size() * 3];
+		Material[] materialsArray = new Material[vertices.size()];
 
 		for (int i = 0; i < vertices.size(); i++) {
 			VertexData currentVertexData = vertices.get(i);
@@ -38,6 +41,9 @@ public class ModelData {
 			Vector2f textureCoord = textures.get(currentVertexData.getTextureIndex());
 			Vector3f normalVector = normals.get(currentVertexData.getNormalIndex());
 			Vector3f tangent = currentVertexData.getAverageTangent();
+			Material material = currentVertexData.getMaterial();
+
+			materialsArray[i] = material;
 
 			verticesArray[i * 3] = position.x;
 			verticesArray[i * 3 + 1] = position.y;
@@ -61,7 +67,7 @@ public class ModelData {
 			indicesArray[i] = indices.get(i);
 		}
 
-		model.loadData(verticesArray, texturesArray, normalsArray, tangentsArray, indicesArray);
+		model.loadData(verticesArray, texturesArray, normalsArray, tangentsArray, indicesArray, materialsArray);
 	}
 
 	public void destroy() {
@@ -69,5 +75,6 @@ public class ModelData {
 		textures = null;
 		normals = null;
 		indices = null;
+		materials = null;
 	}
 }
