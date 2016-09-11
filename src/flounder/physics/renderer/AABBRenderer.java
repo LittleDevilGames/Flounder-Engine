@@ -12,13 +12,14 @@ import flounder.resources.*;
 import flounder.shaders.*;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * A renderer that is used to render AABB's.
  */
 public class AABBRenderer extends IRenderer {
-	private static final MyFile VERTEX_SHADER = new MyFile("flounder/physics/renderer", "aabbVertex.glsl");
-	private static final MyFile FRAGMENT_SHADER = new MyFile("flounder/physics/renderer", "aabbFragment.glsl");
+	private static final MyFile VERTEX_SHADER = new MyFile(Shader.SHADERS_LOC, "aabbs", "aabbVertex.glsl");
+	private static final MyFile FRAGMENT_SHADER = new MyFile(Shader.SHADERS_LOC, "aabbs", "aabbFragment.glsl");
 
 	public static Vector3f ROTATION_REUSABLE = new Vector3f(0, 0, 0);
 	public static Vector3f POSITION_REUSABLE = new Vector3f(0, 0, 0);
@@ -29,7 +30,7 @@ public class AABBRenderer extends IRenderer {
 
 	private Model aabbModel;
 
-	private ShaderProgram shader;
+	private Shader shader;
 
 	private boolean lastWireframe;
 
@@ -37,7 +38,11 @@ public class AABBRenderer extends IRenderer {
 	 * Creates a new AABB renderer.
 	 */
 	public AABBRenderer() {
-		shader = new ShaderProgram("aabb", VERTEX_SHADER, FRAGMENT_SHADER);
+		shader = Shader.newShader("aabbs").setShaderTypes(
+				new ShaderType(GL_VERTEX_SHADER, VERTEX_SHADER),
+				new ShaderType(GL_FRAGMENT_SHADER, FRAGMENT_SHADER)
+		).createInSecondThread();
+
 		lastWireframe = false;
 
 		aabbModel = Model.newModel(new MyFile(MyFile.RES_FOLDER, "models", "aabb.obj")).createInBackground();
@@ -45,7 +50,7 @@ public class AABBRenderer extends IRenderer {
 
 	@Override
 	public void renderObjects(Vector4f clipPlane, ICamera camera) {
-		if (!FlounderEngine.getAABBs().renders()) {
+		if (!shader.isLoaded() || !FlounderEngine.getAABBs().renders()) {
 			return;
 		}
 
@@ -61,7 +66,7 @@ public class AABBRenderer extends IRenderer {
 	@Override
 	public void profile() {
 		if (FlounderEngine.getProfiler().isOpen()) {
-			FlounderEngine.getProfiler().add("AABB", "Render Time", super.getRenderTimeMs());
+			FlounderEngine.getProfiler().add("AABBs", "Render Time", super.getRenderTimeMs());
 		}
 	}
 
@@ -85,7 +90,7 @@ public class AABBRenderer extends IRenderer {
 		Vector3f.add(aabb.getMaxExtents(), aabb.getMinExtents(), POSITION_REUSABLE);
 		POSITION_REUSABLE.set(POSITION_REUSABLE.x / 2.0f, POSITION_REUSABLE.y / 2.0f, POSITION_REUSABLE.z / 2.0f);
 
-		ROTATION_REUSABLE.set(aabb.getRotation());
+		ROTATION_REUSABLE.set(0.0f, 0.0f, 0.0f);
 
 		Vector3f.subtract(aabb.getMaxExtents(), aabb.getMinExtents(), SCALE_REUSABLE);
 		SCALE_REUSABLE.set(SCALE_REUSABLE.x / 2.0f, SCALE_REUSABLE.y / 2.0f, SCALE_REUSABLE.z / 2.0f);

@@ -19,17 +19,14 @@ public class FlounderMaterials implements IModule {
 
 	@Override
 	public void init() {
-
 	}
 
 	@Override
 	public void update() {
-
 	}
 
 	@Override
 	public void profile() {
-
 	}
 
 	/**
@@ -112,7 +109,7 @@ public class FlounderMaterials implements IModule {
 							//	}
 							break;
 						default:
-							FlounderEngine.getLogger().log("[MTL " + file.getName() + "] Unknown Line: " + line);
+							FlounderEngine.getLogger().warning("[MTL " + file.getName() + "] Unknown Line: " + line);
 							break;
 					}
 				}

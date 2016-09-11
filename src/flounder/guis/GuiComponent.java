@@ -203,7 +203,10 @@ public abstract class GuiComponent {
 		setScreenSpacePosition(x, y, width, height);
 
 		childComponents.forEach(GuiComponent::updateScreenSpacePosition);
-		componentTexts.keySet().forEach(text -> setTextScreenSpacePosition(text, componentTexts.get(text)));
+
+		for (Text text : componentTexts.keySet()) {
+			setTextScreenSpacePosition(text, componentTexts.get(text));
+		}
 	}
 
 	/**
@@ -236,13 +239,16 @@ public abstract class GuiComponent {
 	 * @return {@code true} if the mouse cursor is currently over this component.
 	 */
 	protected boolean isMouseOver() {
-		if (FlounderEngine.getDevices().getMouse().isDisplaySelected() && FlounderEngine.getDevices().getDisplay().isFocused()) {
-			if (FlounderEngine.getGuis().getSelector().getCursorX() >= position.x && FlounderEngine.getGuis().getSelector().getCursorX() <= position.x + scale.x) {
-				if (FlounderEngine.getGuis().getSelector().getCursorY() >= position.y && FlounderEngine.getGuis().getSelector().getCursorY() <= position.y + scale.y) {
-					return true;
-				}
+		float positionX = position.x; // / FlounderEngine.getDevices().getDisplay().getAspectRatio();
+		float positionY = position.y;
+
+		//	if (FlounderEngine.getDevices().getMouse().isDisplaySelected() && FlounderEngine.getDevices().getDisplay().isFocused()) {
+		if (FlounderEngine.getGuis().getSelector().getCursorX() >= positionX && FlounderEngine.getGuis().getSelector().getCursorX() <= positionX + scale.x) {
+			if (FlounderEngine.getGuis().getSelector().getCursorY() >= positionY && FlounderEngine.getGuis().getSelector().getCursorY() <= positionY + scale.y) {
+				return true;
 			}
 		}
+		//	}
 
 		return false;
 	}
@@ -285,8 +291,10 @@ public abstract class GuiComponent {
 	}
 
 	public void setRelativeX(float x) {
-		relativePosition.x = x;
-		updateScreenSpacePosition();
+		if (relativePosition.x != x) {
+			relativePosition.x = x;
+			updateScreenSpacePosition();
+		}
 	}
 
 	/**
@@ -297,8 +305,10 @@ public abstract class GuiComponent {
 	}
 
 	public void setRelativeY(float y) {
-		relativePosition.y = y;
-		updateScreenSpacePosition();
+		if (relativePosition.y != y) {
+			relativePosition.y = y;
+			updateScreenSpacePosition();
+		}
 	}
 
 	/**

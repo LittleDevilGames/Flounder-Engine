@@ -8,6 +8,7 @@ import flounder.maths.vectors.*;
 import flounder.particles.loading.*;
 import flounder.resources.*;
 import flounder.shaders.*;
+import flounder.space.*;
 import org.lwjgl.*;
 
 import java.nio.*;
@@ -15,25 +16,30 @@ import java.util.*;
 
 import static org.lwjgl.opengl.ARBDrawInstanced.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 public class ParticleRenderer extends IRenderer {
-	private static final MyFile VERTEX_SHADER = new MyFile("flounder/particles", "particleVertex.glsl");
-	private static final MyFile FRAGMENT_SHADER = new MyFile("flounder/particles", "particleFragment.glsl");
+	private static final MyFile VERTEX_SHADER = new MyFile(Shader.SHADERS_LOC, "particles", "particleVertex.glsl");
+	private static final MyFile FRAGMENT_SHADER = new MyFile(Shader.SHADERS_LOC, "particles", "particleFragment.glsl");
 
 	private static final float[] VERTICES = {-0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f, -0.5f};
-	private static final int MAX_INSTANCES = 10000;
+	private static final int MAX_INSTANCES = 27500;
 	private static final int INSTANCE_DATA_LENGTH = 22;
 
 	private static final int VAO = FlounderEngine.getLoader().createInterleavedVAO(VERTICES, 2);
 	private static final FloatBuffer BUFFER = BufferUtils.createFloatBuffer(MAX_INSTANCES * INSTANCE_DATA_LENGTH);
 	private static final int VBO = FlounderEngine.getLoader().createEmptyVBO(INSTANCE_DATA_LENGTH * MAX_INSTANCES);
 
-	private ShaderProgram shader;
+	private Shader shader;
 	private int pointer;
 	private int rendered;
 
 	public ParticleRenderer() {
-		shader = new ShaderProgram("particle", VERTEX_SHADER, FRAGMENT_SHADER);
+		shader = Shader.newShader("particles").setShaderTypes(
+				new ShaderType(GL_VERTEX_SHADER, VERTEX_SHADER),
+				new ShaderType(GL_FRAGMENT_SHADER, FRAGMENT_SHADER)
+		).createInSecondThread();
+
 		pointer = 0;
 		rendered = 0;
 
@@ -47,20 +53,28 @@ public class ParticleRenderer extends IRenderer {
 	}
 
 	@Override
-	public void renderObjects(final Vector4f clipPlane, final ICamera camera) {
-		if (FlounderEngine.getParticles().getParticles().size() < 1) {
+	public void renderObjects(Vector4f clipPlane, ICamera camera) {
+		if (!shader.isLoaded() || FlounderEngine.getParticles().getParticles().size() < 1) {
 			return;
 		}
 
 		prepareRendering(clipPlane, camera);
 
-		for (final List<Particle> list : FlounderEngine.getParticles().getParticles()) {
-			pointer = 0;
-			final float[] vboData = new float[Math.min(list.size(), MAX_INSTANCES) * INSTANCE_DATA_LENGTH];
-			boolean textureBound = false;
+		for (StructureBasic<Particle> list : FlounderEngine.getParticles().getParticles()) {
+			List<Particle> particles = list.queryInFrustum(new ArrayList<>(), camera.getViewFrustum());
 
-			for (final Particle particle : list) {
-				if (particle.isVisable()) {
+			if (particles.size() > 0) {
+				// Added to particles first -> last, so no initial reverse needed.
+				ArraySorting.heapSort(particles); // Sorts the list big to small.
+				Collections.reverse(particles); // Reverse as the sorted list should be close(small) -> far(big).
+
+				// Creates the data to be used when rendering.
+				float[] vboData = new float[Math.min(particles.size(), MAX_INSTANCES) * INSTANCE_DATA_LENGTH];
+				boolean textureBound = false;
+				pointer = 0;
+
+				// Prepares each particle instance, and add them to the list.
+				for (Particle particle : particles) {
 					if (!textureBound) {
 						prepareTexturedModel(particle.getParticleTemplate());
 						textureBound = true;
@@ -68,17 +82,12 @@ public class ParticleRenderer extends IRenderer {
 
 					prepareInstance(particle, camera, vboData);
 				}
-			}
 
-			try {
+				// Renders the particles list.
 				FlounderEngine.getLoader().updateVBO(VBO, vboData, BUFFER);
-			} catch (BufferOverflowException e) {
-				FlounderEngine.getLogger().error("Particle overflow: " + rendered);
-				FlounderEngine.getLogger().exception(e);
-				break;
+				glDrawArraysInstancedARB(GL_TRIANGLE_STRIP, 0, VERTICES.length, particles.size());
+				unbindTexturedModel();
 			}
-			glDrawArraysInstancedARB(GL_TRIANGLE_STRIP, 0, VERTICES.length, list.size());
-			unbindTexturedModel();
 		}
 
 		endRendering();
@@ -89,7 +98,7 @@ public class ParticleRenderer extends IRenderer {
 		FlounderEngine.getProfiler().add("Particles", "Render Time", super.getRenderTimeMs());
 	}
 
-	private void prepareRendering(final Vector4f clipPlane, final ICamera camera) {
+	private void prepareRendering(Vector4f clipPlane, ICamera camera) {
 		shader.start();
 		shader.getUniformMat4("projectionMatrix").loadMat4(FlounderEngine.getProjectionMatrix());
 		shader.getUniformMat4("viewMatrix").loadMat4(camera.getViewMatrix());
@@ -98,7 +107,7 @@ public class ParticleRenderer extends IRenderer {
 		rendered = 0;
 	}
 
-	private void prepareTexturedModel(final ParticleTemplate particleTemplate) {
+	private void prepareTexturedModel(ParticleTemplate particleTemplate) {
 		unbindTexturedModel();
 
 		OpenGlUtils.bindVAO(VAO, 0, 1, 2, 3, 4, 5, 6, 7);
@@ -122,6 +131,7 @@ public class ParticleRenderer extends IRenderer {
 
 	private void prepareInstance(Particle particle, ICamera camera, float[] vboData) {
 		if (rendered >= MAX_INSTANCES) {
+			FlounderEngine.getLogger().error("Particles overflow: " + rendered);
 			return;
 		}
 

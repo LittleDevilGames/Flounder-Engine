@@ -26,9 +26,24 @@ public class Maths {
 	 */
 	public static float randomInRange(float min, float max) {
 		float range = max - min;
-		float scaled = (float) RANDOM.nextDouble() * range;
+		float scaled = RANDOM.nextFloat() * range;
 		float shifted = scaled + min;
 		return shifted; // == (rand.nextDouble() * (max-min)) + min;
+	}
+
+	/**
+	 * Generates a random value from between a range.
+	 *
+	 * @param min The min value.
+	 * @param max The max value.
+	 *
+	 * @return The randomly selected value within the range.
+	 */
+	public static double randomInRange(double min, double max) {
+		double range = max - min;
+		double scaled = RANDOM.nextDouble() * range;
+		double shifted = scaled + min;
+		return shifted;
 	}
 
 	/**
@@ -333,6 +348,23 @@ public class Maths {
 	}
 
 	/**
+	 * Normalizes a angle into the range of 0-360.
+	 *
+	 * @param angle The source angle.
+	 *
+	 * @return The normalized angle.
+	 */
+	public static double normalizeAngle(double angle) {
+		if (angle >= 360.0f) {
+			return angle - 360.0f;
+		} else if (angle < 0) {
+			return angle + 360.0f;
+		}
+
+		return angle;
+	}
+
+	/**
 	 * Rounds a value to a amount of places after the decimal point.
 	 *
 	 * @param value The value to round.
@@ -346,6 +378,19 @@ public class Maths {
 	}
 
 	/**
+	 * Rounds a value to a amount of places after the decimal point.
+	 *
+	 * @param value The value to round.
+	 * @param place How many places after the decimal to round to.
+	 *
+	 * @return The rounded value.
+	 */
+	public static double roundToPlace(double value, int place) {
+		double placeMul = Math.pow(10.0, place);
+		return Math.round((value) * placeMul) / placeMul;
+	}
+
+	/**
 	 * Used to floor the value if less than the min.
 	 *
 	 * @param min The minimum value.
@@ -354,6 +399,18 @@ public class Maths {
 	 * @return Returns a value with deadband applied.
 	 */
 	public static float deadband(float min, float value) {
+		return Math.abs(value) >= Math.abs(min) ? value : 0.0f;
+	}
+
+	/**
+	 * Used to floor the value if less than the min.
+	 *
+	 * @param min The minimum value.
+	 * @param value The value.
+	 *
+	 * @return Returns a value with deadband applied.
+	 */
+	public static double deadband(double min, double value) {
 		return Math.abs(value) >= Math.abs(min) ? value : 0.0f;
 	}
 
@@ -371,6 +428,19 @@ public class Maths {
 	}
 
 	/**
+	 * Ensures {@code value} is in the range of {@code min} to {@code max}. If {@code value} is greater than {@code max}, this will return {@code max}. If {@code value} is less than {@code min}, this will return {@code min}. Otherwise, {@code value} is returned unchanged.
+	 *
+	 * @param value The value to clamp.
+	 * @param min The smallest value of the result.
+	 * @param max The largest value of the result.
+	 *
+	 * @return {@code value}, clamped between {@code min} and {@code max}.
+	 */
+	public static double clamp(double value, double min, double max) {
+		return (value < min) ? min : (value > max) ? max : value;
+	}
+
+	/**
 	 * Limits the value.
 	 *
 	 * @param value The value.
@@ -379,6 +449,18 @@ public class Maths {
 	 * @return A limited value.
 	 */
 	public static float limit(float value, float limit) {
+		return value > limit ? limit : value;
+	}
+
+	/**
+	 * Limits the value.
+	 *
+	 * @param value The value.
+	 * @param limit The limit.
+	 *
+	 * @return A limited value.
+	 */
+	public static double limit(double value, double limit) {
 		return value > limit ? limit : value;
 	}
 
@@ -414,5 +496,49 @@ public class Maths {
 		double ft = blend * Math.PI;
 		float f = (float) ((1.0f - Math.cos(ft)) * 0.5f);
 		return a * (1.0f - f) + b * f;
+	}
+
+	/**
+	 * Generates a single value from a normal distribution, using Box-Muller.
+	 * https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+	 *
+	 * @param standardDeviation The standard deviation of the distribution.
+	 * @param mean The mean of the distribution.
+	 *
+	 * @return A normally distributed value.
+	 */
+	public static float normallyDistributedSingle(float standardDeviation, float mean) {
+		// Intentionally duplicated to avoid IEnumerable overhead.
+		double u1 = RANDOM.nextDouble(); // These are uniform(0,1) random doubles.
+		double u2 = RANDOM.nextDouble();
+
+		double x1 = Math.sqrt(-2.0 * Math.log(u1));
+		double x2 = 2.0 * Math.PI * u2;
+		double z1 = x1 * Math.sin(x2); // Random normal(0,1)
+		return (float) (z1 * standardDeviation + mean);
+	}
+
+	/**
+	 * Creates a number between two numbers, logarithmic.
+	 *
+	 * @param lowerLimit The lower number.
+	 * @param upperLimit The upper number.
+	 *
+	 * @return The final random number.
+	 */
+	public static double logRandom(double lowerLimit, double upperLimit) {
+		double logLower = Math.log(lowerLimit);
+		double logUpper = Math.log(upperLimit);
+
+		double raw = RANDOM.nextDouble();
+		double result = Math.exp(raw * (logUpper - logLower) + logLower);
+
+		if (result < lowerLimit) {
+			result = lowerLimit;
+		} else if (result > upperLimit) {
+			result = upperLimit;
+		}
+
+		return result;
 	}
 }

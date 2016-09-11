@@ -16,6 +16,7 @@ import flounder.particles.*;
 import flounder.physics.renderer.*;
 import flounder.processing.*;
 import flounder.profiling.*;
+import flounder.shaders.*;
 import flounder.textures.*;
 
 /**
@@ -40,6 +41,7 @@ public class FlounderEngine extends Thread implements IModule {
 	private FlounderAABBs aabbs;
 	private FlounderNetwork network;
 	private FlounderLogger logger;
+	private FlounderShaders shaders;
 	private FlounderProfiler profiler;
 
 	private Implementation implementation;
@@ -62,7 +64,7 @@ public class FlounderEngine extends Thread implements IModule {
 		instance = this;
 
 		// Increment revision every fix for the minor version release. Minor version represents the build month. Major incremented every two years OR after major core engine rewrites.
-		version = new Version("1.8.0");
+		version = new Version("1.09.11");
 
 		this.devices = new FlounderDevices(width, height, title, vsync, antialiasing, samples, fullscreen);
 		this.processors = new FlounderProcessors();
@@ -78,6 +80,7 @@ public class FlounderEngine extends Thread implements IModule {
 		this.aabbs = new FlounderAABBs();
 		this.network = new FlounderNetwork(1331);
 		this.logger = new FlounderLogger();
+		this.shaders = new FlounderShaders();
 		this.profiler = new FlounderProfiler(title + " Profiler");
 
 		this.implementation = implementation;
@@ -102,8 +105,8 @@ public class FlounderEngine extends Thread implements IModule {
 			logger.init();
 			profiler.init();
 			devices.init();
+			shaders.init();
 			processors.init();
-			events.init();
 			loader.init();
 			materials.init();
 			models.init();
@@ -114,6 +117,7 @@ public class FlounderEngine extends Thread implements IModule {
 			particles.init();
 			aabbs.init();
 			network.init();
+			events.init();
 			implementation.init();
 
 			initialized = true;
@@ -146,11 +150,12 @@ public class FlounderEngine extends Thread implements IModule {
 			materials.update();
 			models.update();
 			textures.update();
+			shaders.update();
 			processors.update();
-			events.update();
 			fonts.update();
 			guis.update();
 			cursor.update();
+			events.update();
 
 			implementation.update();
 
@@ -169,6 +174,7 @@ public class FlounderEngine extends Thread implements IModule {
 		if (FlounderEngine.getProfiler().isOpen()) {
 			devices.profile();
 			processors.profile();
+			shaders.profile();
 			events.profile();
 			implementation.profile();
 			particles.profile();
@@ -256,6 +262,15 @@ public class FlounderEngine extends Thread implements IModule {
 	 */
 	public static FlounderMaterials getMaterials() {
 		return instance.materials;
+	}
+
+	/**
+	 * Gets the engines current shader load processor.
+	 *
+	 * @return The engines current shader load processor.
+	 */
+	public static FlounderShaders getShaders() {
+		return instance.shaders;
 	}
 
 	/**
@@ -449,6 +464,7 @@ public class FlounderEngine extends Thread implements IModule {
 	public void dispose() {
 		if (initialized) {
 			processors.dispose();
+			shaders.dispose();
 			events.dispose();
 			models.dispose();
 			materials.dispose();

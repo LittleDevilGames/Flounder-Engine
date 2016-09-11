@@ -13,6 +13,16 @@ public class FlounderLogger implements IModule {
 	public static final boolean LOG_TO_FILE = true;
 	public static final boolean ALLOW_LOUD_LOGS = FlounderLogger.class.getResource("/" + FlounderLogger.class.getName().replace('.', '/') + ".class").toString().startsWith("jar:");
 
+	public static final String ANSI_RESET = "\u001B[0m";
+	public static final String ANSI_BLACK = "\u001B[30m";
+	public static final String ANSI_RED = "\u001B[31m";
+	public static final String ANSI_GREEN = "\u001B[32m";
+	public static final String ANSI_YELLOW = "\u001B[33m";
+	public static final String ANSI_BLUE = "\u001B[34m";
+	public static final String ANSI_PURPLE = "\u001B[35m";
+	public static final String ANSI_CYAN = "\u001B[36m";
+	public static final String ANSI_WHITE = "\u001B[37m";
+
 	private StringBuilder saveData;
 	private int linesRecorded;
 
@@ -26,7 +36,6 @@ public class FlounderLogger implements IModule {
 
 	@Override
 	public void init() {
-		log("Flounder Engine Version: " + FlounderEngine.getVersion().version);
 	}
 
 	@Override
@@ -68,11 +77,41 @@ public class FlounderLogger implements IModule {
 		}
 
 		if (LOG_TO_CONSOLE) {
-			System.out.println("LOG: " + "[" + getDateString() + "]: " + value.toString());
+			System.out.println("LOG [" + getDateString() + "]: " + getString(value));
 		}
 
 		if (LOG_TO_FILE) {
-			saveData.append("LOG: " + "[" + getDateString() + "]: " + value.toString() + "\n");
+			saveData.append("LOG [" + getDateString() + "]: " + getString(value) + "\n");
+			linesRecorded++;
+		}
+	}
+
+	/**
+	 * Warning logs strings sent into javas console, and if {@code LOG_TO_FILE} is enabled it will also be logged to a log file.
+	 *
+	 * @param value Warnings being added to the log file and possibly to your IDES console.
+	 * @param <T> The object type to be logged.
+	 */
+	public <T> void warning(T value) {
+		warning(value, false);
+	}
+
+	/**
+	 * Warning logs strings sent into javas console, and if {@code LOG_TO_FILE} is enabled it will also be logged to a log file.
+	 *
+	 * @param value Warnings being added to the log file and possibly to your IDES console.
+	 * @param loud If the logged value is not useful, it may or may not be logged because of this.
+	 * @param <T> The object type to be logged.
+	 */
+	public <T> void warning(T value, boolean loud) {
+		if (loud && !ALLOW_LOUD_LOGS) {
+			return;
+		}
+
+		System.err.println("WARNING [" + getDateString() + "]: " + getString(value));
+
+		if (LOG_TO_FILE) {
+			saveData.append("WARNING [" + getDateString() + "]: " + getString(value) + "\n");
 			linesRecorded++;
 		}
 	}
@@ -99,12 +138,20 @@ public class FlounderLogger implements IModule {
 			return;
 		}
 
-		System.err.println("ERROR: " + "[" + getDateString() + "]: " + value.toString());
+		System.err.println("ERROR [" + getDateString() + "]: " + getString(value));
 
 		if (LOG_TO_FILE) {
-			saveData.append("ERROR: " + "[" + getDateString() + "]: " + value.toString() + "\n");
+			saveData.append("ERROR [" + getDateString() + "]: " + getString(value) + "\n");
 			linesRecorded++;
 		}
+	}
+
+	private <T> String getString(T value) {
+		if (value == null) {
+			return "NULL";
+		}
+
+		return value.toString();
 	}
 
 	/**
@@ -114,12 +161,12 @@ public class FlounderLogger implements IModule {
 	 */
 	public void exception(Exception exception) {
 		if (LOG_TO_CONSOLE) {
-			System.err.println("EXCEPTION: " + "[" + getDateString() + "]: " + exception.toString());
+			System.err.println("EXCEPTION [" + getDateString() + "]: " + exception.toString());
 			exception.printStackTrace();
 		}
 
 		if (LOG_TO_FILE) {
-			saveData.append("EXCEPTION: " + "[" + getDateString() + "]: " + exception.toString() + "\n");
+			saveData.append("EXCEPTION [" + getDateString() + "]: " + exception.toString() + "\n");
 			linesRecorded += exception.toString().split("\n").length;
 		}
 	}
@@ -128,7 +175,10 @@ public class FlounderLogger implements IModule {
 	 * @return Returns the string of the current date as [hour:minute:second | day/month/year].
 	 */
 	public String getDateString() {
-		return Calendar.getInstance().get(Calendar.HOUR) + "." + Calendar.getInstance().get(Calendar.MINUTE) + "." + (Calendar.getInstance().get(Calendar.SECOND) + 1);
+		int hour = Calendar.getInstance().get(Calendar.HOUR);
+		int minute = Calendar.getInstance().get(Calendar.MINUTE);
+		int second = Calendar.getInstance().get(Calendar.SECOND) + 1;
+		return hour + "." + minute + "." + second;
 	}
 
 	/**

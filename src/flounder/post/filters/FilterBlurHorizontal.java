@@ -6,6 +6,8 @@ import flounder.post.*;
 import flounder.resources.*;
 import flounder.shaders.*;
 
+import static org.lwjgl.opengl.GL20.*;
+
 public class FilterBlurHorizontal extends PostFilter {
 	private int widthValue;
 	private float scaleValue;
@@ -13,15 +15,21 @@ public class FilterBlurHorizontal extends PostFilter {
 	private float sizeScalar;
 
 	public FilterBlurHorizontal(float sizeScalar) {
-		super(new ShaderProgram("filterBlurHorizontal", VERTEX_LOCATION, new MyFile(PostFilter.POST_LOC, "blurHorizontalFragment.glsl")), FBO.newFBO(sizeScalar).create());
-		fitToDisplay = true;
+		super(Shader.newShader("filterBlurHorizontal").setShaderTypes(
+				new ShaderType(GL_VERTEX_SHADER, VERTEX_LOCATION),
+				new ShaderType(GL_FRAGMENT_SHADER, new MyFile(PostFilter.POST_LOC, "blurHorizontalFragment.glsl"))
+		).createInSecondThread(), FBO.newFBO(sizeScalar).create());
+		this.fitToDisplay = true;
 		this.sizeScalar = sizeScalar;
 		init((int) (FlounderEngine.getDevices().getDisplay().getWidth() * sizeScalar));
 	}
 
 	public FilterBlurHorizontal(int widthValue, int heightValue) {
-		super(new ShaderProgram("filterBlurHorizontal", VERTEX_LOCATION, new MyFile(PostFilter.POST_LOC, "blurHorizontalFragment.glsl")), FBO.newFBO(widthValue, heightValue).create());
-		fitToDisplay = false;
+		super(Shader.newShader("filterBlurHorizontal").setShaderTypes(
+				new ShaderType(GL_VERTEX_SHADER, VERTEX_LOCATION),
+				new ShaderType(GL_FRAGMENT_SHADER, new MyFile(PostFilter.POST_LOC, "blurHorizontalFragment.glsl"))
+		).createInSecondThread(), FBO.newFBO(widthValue, heightValue).create());
+		this.fitToDisplay = false;
 		this.sizeScalar = 1.0f;
 		init(widthValue);
 	}

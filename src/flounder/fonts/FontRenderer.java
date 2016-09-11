@@ -9,15 +9,16 @@ import flounder.resources.*;
 import flounder.shaders.*;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
 
 /**
  * A renderer capable of rendering fonts.
  */
 public class FontRenderer extends IRenderer {
-	private static final MyFile VERTEX_SHADER = new MyFile("flounder/fonts", "fontVertex.glsl");
-	private static final MyFile FRAGMENT_SHADER = new MyFile("flounder/fonts", "fontFragment.glsl");
+	private static final MyFile VERTEX_SHADER = new MyFile(Shader.SHADERS_LOC, "fonts", "fontVertex.glsl");
+	private static final MyFile FRAGMENT_SHADER = new MyFile(Shader.SHADERS_LOC, "fonts", "fontFragment.glsl");
 
-	private ShaderProgram shader;
+	private Shader shader;
 
 	private boolean lastWireframe;
 
@@ -25,12 +26,15 @@ public class FontRenderer extends IRenderer {
 	 * Creates a new font renderer.
 	 */
 	public FontRenderer() {
-		shader = new ShaderProgram("font", VERTEX_SHADER, FRAGMENT_SHADER);
+		shader = Shader.newShader("fonts").setShaderTypes(
+				new ShaderType(GL_VERTEX_SHADER, VERTEX_SHADER),
+				new ShaderType(GL_FRAGMENT_SHADER, FRAGMENT_SHADER)
+		).createInSecondThread();
 	}
 
 	@Override
 	public void renderObjects(Vector4f clipPlane, ICamera camera) {
-		if (FlounderEngine.getFonts().getTexts().keySet().size() < 1) {
+		if (!shader.isLoaded() || FlounderEngine.getFonts().getTexts().keySet().size() < 1) {
 			return;
 		}
 
